@@ -1,0 +1,48 @@
+name: AI Paper Daily Push
+
+on:
+  # 每天中午12点（UTC时间4点 = 北京时间12点）
+  schedule:
+    - cron: '0 4 * * *'
+
+  # 允许手动触发
+  workflow_dispatch:
+
+jobs:
+  paper-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          pip install requests feedparser beautifulsoup4 lxml html2text openai
+
+      - name: Run paper pusher
+        env:
+          FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_BASE_URL: https://api.gpt.ge
+          OPENAI_MODEL: gpt-4o
+          HF_DAYS_BACK: 7
+          HF_MAX_PAPERS: 6
+          HF_MAX_BLOGS: 3
+          HF_ENABLE_AI_SUMMARY: true
+          AI_PROVIDER: openai
+        run: |
+          python3 hf_papers_advanced.py
+
+      - name: Upload logs if failed
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs
+          path: |
+            *.log
