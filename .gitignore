@@ -28,3 +28,17 @@ logs/
 # 临时文件
 *.tmp
 test-*.sh
+
+# 本地配置（含密钥）
+papers.sh
+bot_config.sh
+bot_config.local.sh
+.push_history.json
+
+# 非核心文件
+mandelbrot.html
+blackhole.html
+zerobench_*
+claudecode_feishu_bot.py
+claudecode_feishu_bot_enhanced.py
+claudecode_feishu_bot_full.py

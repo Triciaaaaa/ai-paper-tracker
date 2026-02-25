@@ -10,16 +10,20 @@ from typing import List, Dict, Optional
 
 
 class FeishuBotPusher:
-    """飞书群聊自定义机器人推送器"""
+    """飞书群聊自定义机器人推送器（支持单群和多群推送）"""
 
-    def __init__(self, webhook_url: str):
+    def __init__(self, webhook_url: str = None, webhook_urls: list = None):
         """
         初始化推送器
 
         Args:
-            webhook_url: 飞书机器人的 Webhook URL
+            webhook_url: 飞书机器人的 Webhook URL（单群）
+            webhook_urls: 飞书机器人的 Webhook URL 列表（多群）
         """
         self.webhook_url = webhook_url
+        self.webhook_urls = webhook_urls or []
+        if webhook_url:
+            self.webhook_urls.append(webhook_url)
         self.session = requests.Session()
 
     def send_text(self, content: str) -> bool:
@@ -271,40 +275,51 @@ class FeishuBotPusher:
 
     def _send(self, payload: Dict) -> bool:
         """
-        发送消息到飞书
+        发送消息到飞书（支持多群）
 
         Args:
             payload: 消息 payload
 
         Returns:
-            是否发送成功
+            是否发送成功（所有群都成功才算成功）
         """
-        try:
-            response = self.session.post(
-                self.webhook_url,
-                json=payload,
-                timeout=10
-            )
-            response.raise_for_status()
-
-            result = response.json()
-
-            # 检查返回码
-            if result.get('code') == 0:
-                print("✅ 飞书消息发送成功")
-                return True
-            else:
-                print(f"❌ 飞书消息发送失败: {result}")
-                return False
-
-        except requests.RequestException as e:
-            print(f"❌ 请求异常: {e}")
+        if not self.webhook_urls:
+            print("❌ 没有配置飞书 Webhook URL")
             return False
+
+        all_success = True
+        for idx, webhook_url in enumerate(self.webhook_urls, 1):
+            try:
+                response = self.session.post(
+                    webhook_url,
+                    json=payload,
+                    timeout=10
+                )
+                response.raise_for_status()
+
+                result = response.json()
+
+                # 检查返回码
+                if result.get('code') == 0:
+                    print(f"✅ 飞书消息发送成功 (群 {idx}/{len(self.webhook_urls)})")
+                else:
+                    print(f"❌ 飞书消息发送失败 (群 {idx}/{len(self.webhook_urls)}): {result}")
+                    all_success = False
+
+            except requests.RequestException as e:
+                print(f"❌ 请求异常 (群 {idx}/{len(self.webhook_urls)}): {e}")
+                all_success = False
+
+        return all_success
 
 
 def get_pusher_from_env() -> Optional[FeishuBotPusher]:
     """
-    从环境变量获取推送器
+    从环境变量获取推送器（支持多群）
+
+    环境变量:
+    - FEISHU_WEBHOOK_URL: 单个 Webhook URL
+    - FEISHU_WEBHOOK_URLS: 多个 Webhook URL（空格分隔）
 
     Returns:
         FeishuBotPusher 实例，如果未配置则返回 None
@@ -312,8 +327,19 @@ def get_pusher_from_env() -> Optional[FeishuBotPusher]:
     import os
 
     webhook_url = os.getenv('FEISHU_WEBHOOK_URL')
-    if webhook_url:
-        return FeishuBotPusher(webhook_url)
+    webhook_urls_str = os.getenv('FEISHU_WEBHOOK_URLS', '')
+
+    # 解析多群 URL（空格分隔）
+    webhook_urls = []
+    if webhook_urls_str.strip():
+        webhook_urls = webhook_urls_str.strip().split()
+
+    # 兼容旧的 FEISHU_WEBHOOK_URL
+    if webhook_url and webhook_url not in webhook_urls:
+        webhook_urls.insert(0, webhook_url)
+
+    if webhook_urls:
+        return FeishuBotPusher(webhook_urls=webhook_urls)
     return None
 
 

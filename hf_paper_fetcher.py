@@ -19,18 +19,56 @@ class HuggingFacePaperFetcher:
 
     # 默认类别关键词
     DEFAULT_CATEGORIES = {
-        # 核心关注领域
+        # ========== 核心关注领域 ==========
         'rl_verification': ['reinforcement learning verification', 'verify reinforcement learning', 'formal verification rl', 'safe rl', 'rl safety'],
         'alignment': ['alignment', 'constitutional ai', 'ai safety', 'reward hacking', 'rlhf', 'reward model', 'value learning'],
         'ai4math': ['ai for mathematics', 'mathematical reasoning', 'theorem proving', 'math', 'formal math', 'automated theorem proving'],
         'auto_formalization': ['auto-formalization', 'auto formalization', 'formalization', 'informal to formal', 'proof synthesis', 'formal methods'],
-        # 相关领域
+
+        # ========== 数据工程与策略 (新增) ==========
+        # VLM 训练数据策略
+        'vlm_data_strategy': [
+            'vision-language model training data', 'vlm data strategy', 'multimodal training data',
+            'visual instruction tuning', 'vision-language pre-training', 'vlm dataset',
+            'image-text pair quality', 'multimodal data curation', 'visual-language data synthesis',
+            'vlm training recipe', 'vision-language model data recipe'
+        ],
+        # 数据工程体系
+        'data_engineering': [
+            'data engineering', 'data infrastructure', 'data pipeline', 'data architecture',
+            'data-centric ai', 'data quality', 'data curation', 'data management',
+            'dataset construction', 'data platform', 'ml data platform', 'data ops'
+        ],
+        # 训练数据策略与方法
+        'training_data_strategy': [
+            'training data strategy', 'data selection', 'data pruning', 'data filtering',
+            'curriculum learning', 'data augmentation', 'synthetic data',
+            'training data composition', 'data mixture', 'data recipe',
+            'instruction tuning data', 'alignment data', 'pre-training data'
+        ],
+        # 前沿数据方法论
+        'data_methodology': [
+            'data methodology', 'data paradigm', 'data-centric', 'data-centric development',
+            'data quality assessment', 'data evaluation', 'data annotation',
+            'weak supervision', 'self-supervised data', 'unsupervised data',
+            'data efficiency', 'sample efficiency', 'data scaling'
+        ],
+
+        # ========== 相关领域 ==========
         'reasoning': ['reasoning', 'logic', 'deductive reasoning', 'inductive reasoning', 'chain of thought'],
         'llm': ['large language model', 'llm', 'transformer', 'gpt', 'language model'],
         'reinforcement_learning': ['reinforcement learning', 'rl', 'policy gradient', 'q-learning', 'actor critic'],
-        # 其他
+
+        # ========== 视觉与多模态 (VLM相关) ==========
+        'vision_language': [
+            'vision language model', 'visual language model', 'multimodal model',
+            'vision-language', 'visual-language', 'vlm', 'vision transformer',
+            'visual reasoning', 'visual grounding', 'vision instruction'
+        ],
+        'multimodal': ['multimodal', 'vision-language', 'clip', 'visual-language', 'cross-modal'],
         'computer_vision': ['vision', 'image', 'video', 'convolutional', 'segmentation', 'detection'],
-        'multimodal': ['multimodal', 'vision-language', 'clip', 'visual-language'],
+
+        # ========== 其他 ==========
         'generative': ['diffusion', 'gan', 'generation', 'generative'],
         'agents': ['agent', 'autonomous', 'planning', 'decision making']
     }

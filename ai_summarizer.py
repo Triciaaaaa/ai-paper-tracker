@@ -35,18 +35,18 @@ class AISummarizer:
 
         self.model = model
 
-    def summarize_paper(self, paper: Dict, use_hf_summary: bool = False) -> Optional[str]:
+    def summarize_paper(self, paper: Dict, use_hf_summary: bool = False, prev_context: str = None) -> Optional[str]:
         """
-        为论文生成详细摘要
+        为论文生成摘要
 
         Args:
             paper: 论文数据
-            use_hf_summary: 是否优先使用 HF 提供的简短摘要（默认 false，总是生成详细解读）
+            use_hf_summary: 是否优先使用 HF 提供的简短摘要
+            prev_context: 前一天的推送摘要，用于生成有延续性的解读
 
         Returns:
             生成的摘要文本
         """
-        # 如果明确要求使用 HF 摘要且存在，则使用
         if use_hf_summary and paper.get('ai_summary'):
             return f"📌 **HF AI 摘要**:\n{paper['ai_summary']}"
 
@@ -54,18 +54,13 @@ class AISummarizer:
             print(f"⚠️  未配置 {self.provider} API key")
             return None
 
-        # 调用 LLM 生成详细解读
         try:
-            # 中转 API 模式：使用 openai 客户端调用任何模型
             if self.provider == 'openai':
-                return self._summarize_with_openai(paper)
+                return self._summarize_with_openai(paper, prev_context)
             elif self.provider == 'claude':
-                # 检查是否使用中转 API
                 if os.getenv('OPENAI_BASE_URL'):
-                    # 使用中转 API 调用 Claude
-                    return self._summarize_with_openai(paper)
+                    return self._summarize_with_openai(paper, prev_context)
                 else:
-                    # 直接调用 Claude 官方 API
                     return self._summarize_with_claude(paper)
             elif self.provider == 'gemini':
                 return self._summarize_with_gemini(paper)
@@ -120,30 +115,20 @@ class AISummarizer:
 
             client = openai.OpenAI(api_key=self.api_key, base_url=base_url)
 
-            prompt = f"""请详细总结这篇博客文章的核心观点：
+            prompt = f"""请用中文简要总结这篇博客，控制在 150-200 字：
 
 **标题**: {blog['title']}
 **来源**: {blog['source']}
-**链接**: {blog['link']}
 
-**文章内容**:
-{content[:3000]}
+**内容**:
+{content[:2000]}
 
-请按以下格式回答（用中文，详细说明）：
+请回答：
+1. **核心观点**：文章主要说了什么（1-2 句）
+2. **关键发现**：最重要的信息或结论
+3. **值得关注**：对 AI 从业者的启发
 
-## 核心观点
-这篇文章的主要观点是什么？
-
-## 关键信息
-- 作者/发布者
-- 讨论的核心问题
-- 提出的方法或发现
-- 重要的数据或结论
-
-## 个人解读
-如果你是 AI 研究者，你会如何评价这篇文章？它对这个领域有什么启发？
-
-直接返回上述格式的内容，字数 500-800 字。"""
+简洁直接。"""
 
             response = client.chat.completions.create(
                 model=self.model,
@@ -157,13 +142,13 @@ class AISummarizer:
                         "content": prompt
                     }
                 ],
-                max_tokens=2000,
+                max_tokens=600,
                 temperature=0.7
             )
 
             summary = response.choices[0].message.content.strip()
             print(f"  ✅ 博客摘要生成成功，长度: {len(summary)} 字符")
-            return f"🤖 **AI 解读**:\n\n{summary}"
+            return summary
 
         except Exception as e:
             print(f"  ⚠️  博客摘要 API 调用失败: {e}")
@@ -227,12 +212,11 @@ class AISummarizer:
             print(f"⚠️  Gemini API 调用失败: {e}")
             return None
 
-    def _summarize_with_openai(self, paper: Dict) -> Optional[str]:
+    def _summarize_with_openai(self, paper: Dict, prev_context: str = None) -> Optional[str]:
         """使用 OpenAI（或兼容的中转 API）生成摘要"""
         try:
             import openai
 
-            # 获取 base_url，确保包含 /v1 路径
             base_url = os.getenv('OPENAI_BASE_URL', 'https://api.openai.com/v1')
             if not base_url.endswith('/v1'):
                 base_url = base_url.rstrip('/') + '/v1'
@@ -242,7 +226,7 @@ class AISummarizer:
                 base_url=base_url
             )
 
-            prompt = self._build_prompt(paper)
+            prompt = self._build_prompt(paper, prev_context)
 
             # 根据模型名称决定显示的标签
             model_name = self.model
@@ -267,7 +251,7 @@ class AISummarizer:
                         "content": prompt
                     }
                 ],
-                max_tokens=3000,  # 增加输出长度
+                max_tokens=800,
                 temperature=0.7
             )
 
@@ -282,36 +266,29 @@ class AISummarizer:
             print(f"⚠️  API 调用失败: {e}")
             return None
 
-    def _build_prompt(self, paper: Dict) -> str:
+    def _build_prompt(self, paper: Dict, prev_context: str = None) -> str:
         """构建提示词"""
-        prompt = f"""请深入分析以下论文并提供详细的中文解读：
+        context_section = ""
+        if prev_context:
+            context_section = f"""
+**昨日推送摘要**（请参考，体现研究延续性）:
+{prev_context}
 
+"""
+
+        prompt = f"""请用中文简要解读以下论文，控制在 200-300 字：
+{context_section}
 **标题**: {paper['title']}
 **作者**: {paper.get('author_str', 'N/A')}
-**发布时间**: {paper.get('published', 'N/A')}
-**原始摘要**: {paper['summary']}
+**摘要**: {paper['summary']}
 
-请按以下结构回答（每部分详细说明，用中文）：
+请回答：
+1. **做了什么**：一句话概括核心工作
+2. **怎么做的**：关键方法（2-3 句）
+3. **效果如何**：主要结果
+4. **为什么重要**：对领域的意义{'，以及与昨日推送内容的关联' if prev_context else ''}
 
-## 核心问题
-这篇论文试图解决什么问题？
-
-## 主要贡献
-论文的核心创新点和贡献是什么？（列举 3-5 点）
-
-## 技术方法
-使用了什么方法或技术？（详细说明）
-
-## 实验结果
-主要实验结果和性能表现如何？
-
-## 价值意义
-这项研究的重要性在哪里？对未来工作有什么启发？
-
-## 个人观点
-如果你是研究者，你会如何评价这项工作？
-
-直接返回上述格式的内容，不要其他客套话。"""
+简洁直接，不要客套话。"""
         return prompt
 
 

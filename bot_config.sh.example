@@ -1,0 +1,7 @@
+#!/bin/bash
+# 飞书论文机器人配置
+# 复制此文件为 bot_config.sh 并填入你的配置：cp bot_config.sh.example bot_config.sh
+
+export FEISHU_APP_ID="cli_xxxxxxxxxxxxx"
+export FEISHU_APP_SECRET="your_app_secret"
+export BOT_PORT="5000"

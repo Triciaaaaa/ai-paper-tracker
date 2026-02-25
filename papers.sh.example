@@ -1,0 +1,29 @@
+#!/bin/bash
+# AI 论文推送快捷脚本
+# 复制此文件为 papers.sh 并填入你的配置：cp papers.sh.example papers.sh
+
+# 飞书 Webhook URL（支持多群推送，空格分隔）
+export FEISHU_WEBHOOK_URLS="https://open.larkoffice.com/open-apis/bot/v2/hook/YOUR_HOOK_1 https://open.larkoffice.com/open-apis/bot/v2/hook/YOUR_HOOK_2"
+
+# AI 摘要配置
+export HF_ENABLE_AI_SUMMARY=true
+export AI_PROVIDER=openai
+export OPENAI_API_KEY="sk-your-api-key"
+export OPENAI_BASE_URL="https://api.openai.com"
+export OPENAI_MODEL="gpt-4o"
+
+# 论文类别过滤
+export HF_CATEGORIES="vlm_data_strategy,data_engineering,training_data_strategy,data_methodology,vision_language,alignment"
+
+# 推送数量
+export HF_MAX_PAPERS="6"
+export HF_MAX_BLOGS="3"
+export HF_INCLUDE_CLASSIC="true"
+
+# Twitter 推文（可选）
+# export HF_ENABLE_TWITTER="true"
+# export TWITTER_ACCOUNTS="ylecun,karpathy,AndrewYNg,sama,hardmaru"
+
+# 运行推送
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+python3 "$SCRIPT_DIR/hf_papers_advanced.py" "$@"
