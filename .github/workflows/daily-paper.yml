@@ -39,25 +39,9 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Check secrets
-        env:
-          WEBHOOK: ${{ secrets.FEISHU_WEBHOOK_URLS }}
-          API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        run: |
-          if [ -z "$WEBHOOK" ]; then
-            echo "::error::FEISHU_WEBHOOK_URLS secret is not set. Go to Settings > Secrets to add it."
-            exit 1
-          fi
-          echo "FEISHU_WEBHOOK_URLS is set (${#WEBHOOK} chars)"
-          if [ -z "$API_KEY" ]; then
-            echo "::warning::OPENAI_API_KEY not set, AI summaries will be skipped"
-          else
-            echo "OPENAI_API_KEY is set"
-          fi
-
       - name: Run paper pusher
         env:
-          FEISHU_WEBHOOK_URLS: ${{ secrets.FEISHU_WEBHOOK_URLS }}
+          FEISHU_WEBHOOK_URLS: ${{ secrets.FEISHU_WEBHOOK_URLS || secrets.FEISHU_WEBHOOK_URL }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_BASE_URL: https://api.gpt.ge
           OPENAI_MODEL: gpt-4o
@@ -73,7 +57,7 @@ jobs:
       - name: Retry on failure
         if: failure()
         env:
-          FEISHU_WEBHOOK_URLS: ${{ secrets.FEISHU_WEBHOOK_URLS }}
+          FEISHU_WEBHOOK_URLS: ${{ secrets.FEISHU_WEBHOOK_URLS || secrets.FEISHU_WEBHOOK_URL }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_BASE_URL: https://api.gpt.ge
           OPENAI_MODEL: gpt-4o
