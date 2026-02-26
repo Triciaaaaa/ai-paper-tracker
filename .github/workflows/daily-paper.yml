@@ -40,13 +40,19 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Check secrets
+        env:
+          WEBHOOK: ${{ secrets.FEISHU_WEBHOOK_URLS }}
+          API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
-          if [ -z "${{ secrets.FEISHU_WEBHOOK_URLS }}" ]; then
-            echo "::error::FEISHU_WEBHOOK_URLS secret is not set"
+          if [ -z "$WEBHOOK" ]; then
+            echo "::error::FEISHU_WEBHOOK_URLS secret is not set. Go to Settings > Secrets to add it."
             exit 1
           fi
-          if [ -z "${{ secrets.OPENAI_API_KEY }}" ]; then
+          echo "FEISHU_WEBHOOK_URLS is set (${#WEBHOOK} chars)"
+          if [ -z "$API_KEY" ]; then
             echo "::warning::OPENAI_API_KEY not set, AI summaries will be skipped"
+          else
+            echo "OPENAI_API_KEY is set"
           fi
 
       - name: Run paper pusher
