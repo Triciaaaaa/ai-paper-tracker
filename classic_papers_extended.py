@@ -203,6 +203,116 @@ CLASSIC_PAPERS = {
             'keywords': ['InstructGPT', 'instruction following', 'RLHF', 'fine-tuning', 'human feedback']
         }
     ],
+    'data_engineering': [
+        {
+            'title': 'DataComp: In search of the next generation of multimodal datasets',
+            'authors': 'Gadre et al. (UW, Google, LAION)',
+            'year': '2023',
+            'url': 'https://arxiv.org/abs/2304.14108',
+            'description': '提出了数据竞赛范式，系统研究了不同数据过滤策略对 CLIP 模型性能的影响，建立了 multimodal 数据集构建的 benchmark。',
+            'keywords': ['data curation', 'CLIP', 'data filtering', 'multimodal dataset', 'benchmark']
+        },
+        {
+            'title': 'The Pile: An 800GB Dataset of Diverse Text for Language Modeling',
+            'authors': 'Gao et al. (EleutherAI)',
+            'year': '2020',
+            'url': 'https://arxiv.org/abs/2101.00027',
+            'description': '开源的大规模预训练数据集，包含 22 个子集覆盖多样文本来源，推动了开源 LLM 生态发展。',
+            'keywords': ['pre-training data', 'dataset construction', 'data diversity', 'language modeling', 'open source']
+        },
+        {
+            'title': 'Data-centric Artificial Intelligence: A Survey',
+            'authors': 'Zha et al.',
+            'year': '2023',
+            'url': 'https://arxiv.org/abs/2303.10158',
+            'description': '以数据为中心的 AI 系统综述，覆盖数据收集、标注、清洗、质量评估等全链路方法论。',
+            'keywords': ['data-centric AI', 'data quality', 'data annotation', 'data augmentation', 'data management']
+        },
+        {
+            'title': 'Scaling Data-Constrained Language Models',
+            'authors': 'Muennighoff et al. (BigScience)',
+            'year': '2023',
+            'url': 'https://arxiv.org/abs/2305.16264',
+            'description': '研究了数据受限条件下的 LLM 训练策略，发现多次重复训练数据可有效利用，为数据有限场景提供了理论依据。',
+            'keywords': ['data scaling', 'data repetition', 'sample efficiency', 'scaling laws', 'data-constrained']
+        },
+        {
+            'title': 'D4: Improving LLM Pretraining via Document De-Duplication and Diversification',
+            'authors': 'Tirumala et al. (Meta)',
+            'year': '2023',
+            'url': 'https://arxiv.org/abs/2308.12284',
+            'description': '提出文档级去重和多样化策略，系统性地改善了预训练数据质量，显著提升 LLM 下游性能。',
+            'keywords': ['deduplication', 'data diversity', 'pre-training data', 'data quality', 'data pipeline']
+        }
+    ],
+    'multimodal': [
+        {
+            'title': 'Learning Transferable Visual Models From Natural Language Supervision (CLIP)',
+            'authors': 'Radford et al. (OpenAI)',
+            'year': '2021',
+            'url': 'https://arxiv.org/abs/2103.00020',
+            'description': 'CLIP 模型，通过自然语言监督学习视觉表示，开创了 vision-language 对齐的新范式，在零样本分类上表现出色。',
+            'keywords': ['CLIP', 'vision-language', 'contrastive learning', 'zero-shot', 'image-text alignment']
+        },
+        {
+            'title': 'Visual Instruction Tuning (LLaVA)',
+            'authors': 'Liu et al. (UW, Microsoft)',
+            'year': '2023',
+            'url': 'https://arxiv.org/abs/2304.08485',
+            'description': 'LLaVA 模型，首次将视觉指令微调引入多模态 LLM，证明了简单高效的 VLM 训练方案的可行性。',
+            'keywords': ['LLaVA', 'visual instruction tuning', 'VLM', 'multimodal LLM', 'instruction following']
+        },
+        {
+            'title': 'Flamingo: a Visual Language Model for Few-Shot Learning',
+            'authors': 'Alayrac et al. (DeepMind)',
+            'year': '2022',
+            'url': 'https://arxiv.org/abs/2204.14198',
+            'description': 'Flamingo 模型，通过交叉注意力融合视觉和语言模态，展示了多模态少样本学习的强大能力。',
+            'keywords': ['Flamingo', 'few-shot learning', 'cross-attention', 'vision-language model', 'multimodal']
+        },
+        {
+            'title': 'InternVL: Scaling up Vision Foundation Models and Aligning for Generic Visual-Linguistic Tasks',
+            'authors': 'Chen et al. (Shanghai AI Lab)',
+            'year': '2024',
+            'url': 'https://arxiv.org/abs/2312.14238',
+            'description': 'InternVL 系列，将视觉基础模型扩展到 6B 参数并与 LLM 对齐，在多个 VL benchmark 上达到 SOTA。',
+            'keywords': ['InternVL', 'vision foundation model', 'VLM', 'visual-linguistic', 'scaling']
+        }
+    ],
+    'scaling_laws': [
+        {
+            'title': 'Scaling Laws for Neural Language Models',
+            'authors': 'Kaplan et al. (OpenAI)',
+            'year': '2020',
+            'url': 'https://arxiv.org/abs/2001.08361',
+            'description': '首次系统性提出 LLM scaling laws，揭示了模型大小、数据量和计算量与性能之间的幂律关系。',
+            'keywords': ['scaling laws', 'power law', 'compute-optimal', 'language models', 'neural scaling']
+        },
+        {
+            'title': 'Training Compute-Optimal Large Language Models (Chinchilla)',
+            'authors': 'Hoffmann et al. (DeepMind)',
+            'year': '2022',
+            'url': 'https://arxiv.org/abs/2203.15556',
+            'description': 'Chinchilla 论文，修正了 Kaplan 的 scaling laws，证明了训练数据量被严重低估，改变了 LLM 训练策略。',
+            'keywords': ['Chinchilla', 'compute-optimal', 'scaling laws', 'data scaling', 'training efficiency']
+        },
+        {
+            'title': 'Scaling Laws for Autoregressive Generative Modeling',
+            'authors': 'Henighan et al. (OpenAI)',
+            'year': '2020',
+            'url': 'https://arxiv.org/abs/2010.14701',
+            'description': '将 scaling laws 扩展到多模态生成模型，揭示了不同模态（文本、图像、视频等）的统一缩放规律。',
+            'keywords': ['scaling laws', 'generative models', 'multimodal', 'autoregressive', 'cross-modal scaling']
+        },
+        {
+            'title': 'Scaling Data-Constrained Language Models',
+            'authors': 'Muennighoff et al. (BigScience)',
+            'year': '2023',
+            'url': 'https://arxiv.org/abs/2305.16264',
+            'description': '研究了数据受限条件下的 scaling 行为，发现多 epoch 训练比想象中有效，为数据有限场景提供了新视角。',
+            'keywords': ['data scaling', 'data repetition', 'epoch', 'scaling laws', 'data-constrained training']
+        }
+    ],
     'information_theory': [
         {
             'title': 'A Mathematical Theory of Communication',
@@ -307,7 +417,10 @@ class ClassicPaperFetcher:
             'alignment': ['llm', 'reinforcement_learning'],
             'ai4math': ['llm', 'reasoning'],
             'formal_verification': ['ai4math', 'reasoning'],
-            'llm': ['alignment', 'reasoning']
+            'llm': ['alignment', 'reasoning', 'scaling_laws'],
+            'data_engineering': ['scaling_laws', 'llm', 'multimodal'],
+            'multimodal': ['data_engineering', 'llm', 'scaling_laws'],
+            'scaling_laws': ['llm', 'data_engineering']
         }
 
         return category_relations.get(current_category, [])

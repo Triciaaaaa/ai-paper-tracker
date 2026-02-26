@@ -58,10 +58,7 @@ class AISummarizer:
             if self.provider == 'openai':
                 return self._summarize_with_openai(paper, prev_context)
             elif self.provider == 'claude':
-                if os.getenv('OPENAI_BASE_URL'):
-                    return self._summarize_with_openai(paper, prev_context)
-                else:
-                    return self._summarize_with_claude(paper)
+                return self._summarize_with_claude(paper)
             elif self.provider == 'gemini':
                 return self._summarize_with_gemini(paper)
             else:
@@ -92,16 +89,98 @@ class AISummarizer:
             return None
 
         try:
-            # 使用中转 API
-            if os.getenv('OPENAI_BASE_URL') or self.provider == 'openai':
+            if self.provider == 'openai':
                 return self._summarize_blog_with_openai(blog, content)
             elif self.provider == 'claude':
+                return self._summarize_blog_with_claude(blog, content)
+            elif self.provider == 'gemini':
                 return self._summarize_blog_with_openai(blog, content)
             else:
                 return None
 
         except Exception as e:
             print(f"  ⚠️  博客摘要生成失败: {e}")
+            return None
+
+    def summarize_classic_paper(self, paper: Dict) -> Optional[str]:
+        """为经典论文生成 AI 解读，聚焦历史意义"""
+        if not self.api_key:
+            return None
+
+        try:
+            import openai
+            base_url = os.getenv('OPENAI_BASE_URL', 'https://api.openai.com/v1')
+            if not base_url.endswith('/v1'):
+                base_url = base_url.rstrip('/') + '/v1'
+
+            client = openai.OpenAI(api_key=self.api_key, base_url=base_url)
+
+            prompt = f"""请用中文解读这篇经典论文，100-150 字：
+
+**标题**: {paper['title']} ({paper.get('year', '')})
+**作者**: {paper['authors']}
+**简介**: {paper['description']}
+**关键词**: {', '.join(paper.get('keywords', []))}
+
+请回答：
+1. **历史地位**：这篇论文在 AI 发展史上的位置
+2. **核心贡献**：最关键的创新点
+3. **当今影响**：对今天的研究/工业界还有什么影响
+
+简洁直接。"""
+
+            response = client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": "你是 AI 研究助手，擅长解读经典论文的历史意义和当代价值。"},
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=400,
+                temperature=0.7
+            )
+
+            summary = response.choices[0].message.content.strip()
+            print(f"  ✅ 经典论文解读生成成功，长度: {len(summary)} 字符")
+            return f"🤖 **AI 解读**:\n\n{summary}"
+
+        except Exception as e:
+            print(f"  ⚠️  经典论文解读失败: {e}")
+            return None
+
+    def _summarize_blog_with_claude(self, blog: Dict, content: str) -> Optional[str]:
+        """使用 Claude 生成博客摘要"""
+        try:
+            import anthropic
+            client = anthropic.Anthropic(api_key=self.api_key)
+
+            prompt = f"""请用中文简要总结这篇博客，控制在 150-200 字：
+
+**标题**: {blog['title']}
+**来源**: {blog['source']}
+
+**内容**:
+{content[:2000]}
+
+请回答：
+1. **核心观点**：文章主要说了什么（1-2 句）
+2. **关键发现**：最重要的信息或结论
+3. **值得关注**：对 AI 从业者的启发
+
+简洁直接。"""
+
+            response = client.messages.create(
+                model=self.model,
+                max_tokens=600,
+                temperature=0.7,
+                messages=[{"role": "user", "content": prompt}]
+            )
+
+            summary = response.content[0].text.strip()
+            print(f"  ✅ 博客摘要生成成功，长度: {len(summary)} 字符")
+            return summary
+
+        except Exception as e:
+            print(f"  ⚠️  Claude 博客摘要失败: {e}")
             return None
 
     def _summarize_blog_with_openai(self, blog: Dict, content: str) -> Optional[str]:
@@ -244,7 +323,7 @@ class AISummarizer:
                 messages=[
                     {
                         "role": "system",
-                        "content": "你是一个专业的 AI 研究助手，擅长深入分析和总结学术论文。请用中文回答，回答要详细且有深度。"
+                        "content": "你是 AI 研究助手，用中文简洁解读学术论文，重点突出创新点和实际价值。"
                     },
                     {
                         "role": "user",

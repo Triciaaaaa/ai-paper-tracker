@@ -51,6 +51,9 @@ INCLUDE_CLASSIC = os.getenv('HF_INCLUDE_CLASSIC', 'true').lower() == 'true'
 # 是否包含 Twitter 推文
 ENABLE_TWITTER = os.getenv('HF_ENABLE_TWITTER', 'false').lower() == 'true'
 
+# Dry-run 模式（只获取不推送）
+DRY_RUN = os.getenv('HF_DRY_RUN', 'false').lower() == 'true' or '--dry-run' in sys.argv
+
 
 # ============ 主逻辑 ============
 
@@ -59,7 +62,7 @@ def format_datetime(date_str: str) -> str:
     try:
         dt = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
         return dt.strftime('%Y-%m-%d %H:%M')
-    except:
+    except (ValueError, TypeError):
         return date_str[:19] if date_str else ''
 
 
@@ -180,7 +183,7 @@ def main():
 
     # 检查推送配置
     pusher = get_pusher_from_env()
-    if not pusher:
+    if not pusher and not DRY_RUN:
         print("❌ 未配置飞书 Webhook")
         print("\n请设置环境变量:")
         print("  export FEISHU_WEBHOOK_URL='你的webhook地址'")
@@ -318,9 +321,7 @@ def main():
         print("📖 获取经典论文推荐")
         print("=" * 60)
 
-        classic_fetcher = ClassicPaperFetcher(
-            categories=['reinforcement_learning', 'alignment', 'ai4math', 'formal_verification', 'llm', 'information_theory']
-        )
+        classic_fetcher = ClassicPaperFetcher()
         classic_paper = classic_fetcher.get_random_paper()
         if classic_paper:
             # 添加关键词解析
@@ -328,6 +329,13 @@ def main():
             print(f"✅ 今日推荐: {classic_paper['title']}")
             if keywords_analysis:
                 print(f"   关键词: {', '.join(classic_paper.get('keywords', [])[:5])}")
+
+            # 生成经典论文 AI 解读
+            if summarizer:
+                print(f"  🤖 生成经典论文解读...")
+                classic_summary = summarizer.summarize_classic_paper(classic_paper)
+                if classic_summary:
+                    classic_paper['ai_summary'] = classic_summary
         else:
             print("⚠️  未找到经典论文")
 
@@ -340,7 +348,12 @@ def main():
 
         trend_summary = generate_trend_summary(summarizer, papers, blogs, prev_context)
 
-    # ========== 5. 构建推送内容 ==========
+    # ========== 5. 空推送防护 ==========
+    if not papers and not blogs:
+        print("\n⚠️  论文和博客均为空，跳过推送")
+        return 0
+
+    # ========== 6. 构建推送内容 ==========
     print("\n" + "=" * 60)
     print("📝 构建推送消息")
     print("=" * 60)
@@ -348,7 +361,24 @@ def main():
     card = build_enhanced_card(papers, blogs, classic_paper, trend_summary, tweets)
     print(f"✅ 构建完成")
 
-    # ========== 5. 发送推送 ==========
+    # ========== 7. Dry-run 模式 ==========
+    if DRY_RUN:
+        print("\n" + "=" * 60)
+        print("🧪 DRY-RUN 模式 — 跳过推送")
+        print("=" * 60)
+        print(f"  • 论文数: {len(papers)}")
+        for p in papers:
+            print(f"    - {p['title'][:60]}")
+        print(f"  • 博客数: {len(blogs)}")
+        for b in blogs:
+            print(f"    - [{b['source']}] {b['title'][:50]}")
+        if classic_paper:
+            print(f"  • 经典论文: {classic_paper['title']}")
+        if trend_summary:
+            print(f"  • 趋势: {trend_summary[:100]}...")
+        return 0
+
+    # ========== 8. 发送推送 ==========
     print("\n" + "=" * 60)
     print("📤 发送到飞书")
     print("=" * 60)
@@ -429,12 +459,17 @@ def build_enhanced_card(papers: list, blogs: list, classic_paper: dict = None, t
             }
         })
 
-        # 经典论文内容（包含关键词解析）
+        # 经典论文内容
         classic_content = f"**{classic_paper['title']}** ({classic_paper.get('year', 'N/A')})\n\n"
         classic_content += f"👥 **作者**: {classic_paper['authors']}\n\n"
-        classic_content += f"📝 **简介**: {classic_paper['description']}\n\n"
 
-        # 添加关键词解析
+        # AI 解读优先，否则用静态描述
+        if classic_paper.get('ai_summary'):
+            classic_content += f"{classic_paper['ai_summary']}\n\n"
+        else:
+            classic_content += f"📝 **简介**: {classic_paper['description']}\n\n"
+
+        # 关键词
         keywords = classic_paper.get('keywords', [])
         if keywords:
             classic_content += f"🔑 **核心概念**: {', '.join(keywords[:5])}"

@@ -287,27 +287,38 @@ class FeishuBotPusher:
             print("❌ 没有配置飞书 Webhook URL")
             return False
 
+        import time as _time
         all_success = True
         for idx, webhook_url in enumerate(self.webhook_urls, 1):
-            try:
-                response = self.session.post(
-                    webhook_url,
-                    json=payload,
-                    timeout=10
-                )
-                response.raise_for_status()
+            success = False
+            for attempt in range(3):
+                try:
+                    response = self.session.post(
+                        webhook_url,
+                        json=payload,
+                        timeout=10
+                    )
+                    response.raise_for_status()
 
-                result = response.json()
+                    result = response.json()
 
-                # 检查返回码
-                if result.get('code') == 0:
-                    print(f"✅ 飞书消息发送成功 (群 {idx}/{len(self.webhook_urls)})")
-                else:
-                    print(f"❌ 飞书消息发送失败 (群 {idx}/{len(self.webhook_urls)}): {result}")
-                    all_success = False
+                    if result.get('code') == 0:
+                        print(f"✅ 飞书消息发送成功 (群 {idx}/{len(self.webhook_urls)})")
+                        success = True
+                        break
+                    else:
+                        print(f"❌ 飞书消息发送失败 (群 {idx}/{len(self.webhook_urls)}): {result}")
+                        if attempt < 2:
+                            print(f"  ↻ 重试 ({attempt + 2}/3)...")
+                            _time.sleep(2)
 
-            except requests.RequestException as e:
-                print(f"❌ 请求异常 (群 {idx}/{len(self.webhook_urls)}): {e}")
+                except requests.RequestException as e:
+                    print(f"❌ 请求异常 (群 {idx}/{len(self.webhook_urls)}): {e}")
+                    if attempt < 2:
+                        print(f"  ↻ 重试 ({attempt + 2}/3)...")
+                        _time.sleep(2)
+
+            if not success:
                 all_success = False
 
         return all_success

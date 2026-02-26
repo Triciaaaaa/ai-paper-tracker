@@ -319,7 +319,7 @@ def handle_blogs(chat_id, chat_type, sender_id, args):
         try:
             from blog_fetcher import BlogFetcher
             fetcher = BlogFetcher()
-            blogs = fetcher.fetch_all_blogs()
+            blogs = fetcher.fetch_blogs()
 
             if not blogs:
                 send_text(chat_id, "未找到新博客", chat_type, sender_id)
@@ -370,8 +370,20 @@ def handle_trending(chat_id, chat_type, sender_id, args):
 
             summarizer = get_summarizer_from_env()
             titles = [p.get('title', '') for p in papers[:15]]
-            prompt = "请用中文总结以下 AI 论文的研究趋势（3-5 个要点）：\n\n" + '\n'.join(f"- {t}" for t in titles)
-            summary = summarizer.generate_summary("AI Research Trends", prompt)
+            content = "请用中文总结以下 AI 论文的研究趋势（3-5 个要点）：\n\n" + '\n'.join(f"- {t}" for t in titles)
+
+            # 直接用 openai client 调用
+            import openai
+            base_url = os.getenv('OPENAI_BASE_URL', 'https://api.openai.com/v1')
+            if not base_url.endswith('/v1'):
+                base_url = base_url.rstrip('/') + '/v1'
+            client = openai.OpenAI(api_key=summarizer.api_key, base_url=base_url)
+            resp = client.chat.completions.create(
+                model=summarizer.model,
+                messages=[{"role": "user", "content": content}],
+                max_tokens=800, temperature=0.7
+            )
+            summary = resp.choices[0].message.content.strip()
 
             card = {
                 "config": {"wide_screen_mode": True},

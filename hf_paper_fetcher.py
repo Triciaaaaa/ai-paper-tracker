@@ -205,6 +205,10 @@ class HuggingFacePaperFetcher:
             if self.category_filters and not any(cat in self.category_filters for cat in categories):
                 return None  # 不在需要的类别中，跳过
 
+            # 相关性评分
+            upvotes = item.get('paper', {}).get('upvotes', 0) if isinstance(item.get('paper'), dict) else item.get('upvotes', 0)
+            score = upvotes * 2 + len(categories) * 10 + (5 if project_page else 0) + (3 if github_repo else 0)
+
             return {
                 'paper_id': paper_id,
                 'title': title,
@@ -218,6 +222,8 @@ class HuggingFacePaperFetcher:
                 'github_repo': github_repo,
                 'ai_summary': ai_summary,
                 'categories': categories,
+                'upvotes': upvotes,
+                'relevance_score': score,
                 'source': 'huggingface'
             }
 
@@ -227,7 +233,7 @@ class HuggingFacePaperFetcher:
 
     def _detect_categories(self, title: str, summary: str) -> List[str]:
         """
-        检测论文所属类别
+        检测论文所属类别（短关键词用 word boundary 避免误匹配）
 
         Args:
             title: 论文标题
@@ -242,9 +248,16 @@ class HuggingFacePaperFetcher:
 
         for category, keywords in self.DEFAULT_CATEGORIES.items():
             for keyword in keywords:
-                if keyword.lower() in text:
-                    detected.append(category)
-                    break
+                kw_lower = keyword.lower()
+                if len(kw_lower) <= 4:
+                    # 短关键词用 word boundary，避免 "rl" 匹配 "url"
+                    if re.search(r'\b' + re.escape(kw_lower) + r'\b', text):
+                        detected.append(category)
+                        break
+                else:
+                    if kw_lower in text:
+                        detected.append(category)
+                        break
 
         return detected
 
@@ -271,6 +284,9 @@ class HuggingFacePaperFetcher:
                 break
 
             time.sleep(0.5)  # 避免请求过快
+
+        # 按相关性评分排序
+        all_papers.sort(key=lambda p: p.get('relevance_score', 0), reverse=True)
 
         return all_papers[:self.max_papers]
 

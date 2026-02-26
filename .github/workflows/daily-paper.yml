@@ -72,3 +72,14 @@ jobs:
           echo "First attempt failed, retrying with AI summary disabled..."
           sleep 10
           python3 hf_papers_advanced.py
+
+      - name: Notify Feishu on failure
+        if: failure()
+        env:
+          FEISHU_WEBHOOK_URLS: ${{ secrets.FEISHU_WEBHOOK_URLS || secrets.FEISHU_WEBHOOK_URL }}
+        run: |
+          for url in $FEISHU_WEBHOOK_URLS; do
+            curl -s -X POST "$url" \
+              -H 'Content-Type: application/json' \
+              -d '{"msg_type":"text","content":{"text":"⚠️ GitHub Actions AI Paper Daily Push 失败\n\n请检查: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"}}'
+          done

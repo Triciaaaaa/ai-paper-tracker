@@ -6,6 +6,7 @@
 
 import feedparser
 import requests
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
 from typing import List, Dict, Optional
 from bs4 import BeautifulSoup
@@ -174,24 +175,30 @@ class BlogFetcher:
         all_articles = []
         cutoff_date = datetime.now() - timedelta(days=self.days_back)
 
-        for source_key in sources:
-            if source_key not in self.RSS_SOURCES:
-                print(f"⚠️  未知的源: {source_key}")
-                continue
+        # 并发获取所有 RSS 源
+        valid_sources = [(k, self.RSS_SOURCES[k]) for k in sources if k in self.RSS_SOURCES]
+        for k in sources:
+            if k not in self.RSS_SOURCES:
+                print(f"⚠️  未知的源: {k}")
 
-            source_config = self.RSS_SOURCES[source_key]
+        def _fetch_source(args):
+            source_key, source_config = args
             print(f"📰 获取 {source_config['name']} 博客...")
-
             articles = self._fetch_from_rss(source_key, source_config, cutoff_date)
-
-            # 获取全文内容
             if fetch_full_content:
                 for article in articles:
                     full_content = self._fetch_full_content(article)
                     if full_content:
                         article['full_content'] = full_content
+            return articles
 
-            all_articles.extend(articles)
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            futures = {executor.submit(_fetch_source, src): src for src in valid_sources}
+            for future in as_completed(futures):
+                try:
+                    all_articles.extend(future.result())
+                except Exception as e:
+                    print(f"  ⚠️  源获取异常: {e}")
 
         # 去重：按链接去重，避免同一篇文章重复出现
         seen_links = set()
@@ -228,7 +235,7 @@ class BlogFetcher:
             soup = BeautifulSoup(response.content, 'html.parser')
 
             # 移除不需要的标签
-            for script in soup(['script', 'style', 'nav', 'footer', 'header', 'aside']):
+            for script in soup(['script', 'style', 'nav', 'footer', 'aside']):
                 script.decompose()
 
             # 提取主要内容
