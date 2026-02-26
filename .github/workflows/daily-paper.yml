@@ -27,15 +27,17 @@ jobs:
 
       - name: Run paper pusher
         env:
-          FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
+          FEISHU_WEBHOOK_URLS: ${{ secrets.FEISHU_WEBHOOK_URLS }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_BASE_URL: https://api.gpt.ge
           OPENAI_MODEL: gpt-4o
-          HF_DAYS_BACK: 7
-          HF_MAX_PAPERS: 6
-          HF_MAX_BLOGS: 3
-          HF_ENABLE_AI_SUMMARY: true
           AI_PROVIDER: openai
+          HF_ENABLE_AI_SUMMARY: "true"
+          HF_DAYS_BACK: "7"
+          HF_MAX_PAPERS: "6"
+          HF_MAX_BLOGS: "3"
+          HF_CATEGORIES: "vlm_data_strategy,data_engineering,training_data_strategy,data_methodology,vision_language,alignment"
+          HF_INCLUDE_CLASSIC: "true"
         run: |
           python3 hf_papers_advanced.py
 
