@@ -5,8 +5,22 @@ on:
   schedule:
     - cron: '0 4 * * *'
 
-  # 允许手动触发
+  # 手动触发，支持参数覆盖
   workflow_dispatch:
+    inputs:
+      max_papers:
+        description: '论文数量'
+        default: '6'
+      max_blogs:
+        description: '博客数量'
+        default: '3'
+      categories:
+        description: '类别过滤（逗号分隔，留空=默认）'
+        default: ''
+      enable_ai_summary:
+        description: '启用 AI 摘要'
+        type: boolean
+        default: true
 
 jobs:
   paper-push:
@@ -20,10 +34,20 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
+          cache: 'pip'
 
       - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Check secrets
         run: |
-          pip install requests feedparser beautifulsoup4 lxml html2text openai
+          if [ -z "${{ secrets.FEISHU_WEBHOOK_URLS }}" ]; then
+            echo "::error::FEISHU_WEBHOOK_URLS secret is not set"
+            exit 1
+          fi
+          if [ -z "${{ secrets.OPENAI_API_KEY }}" ]; then
+            echo "::warning::OPENAI_API_KEY not set, AI summaries will be skipped"
+          fi
 
       - name: Run paper pusher
         env:
@@ -32,19 +56,29 @@ jobs:
           OPENAI_BASE_URL: https://api.gpt.ge
           OPENAI_MODEL: gpt-4o
           AI_PROVIDER: openai
-          HF_ENABLE_AI_SUMMARY: "true"
+          HF_ENABLE_AI_SUMMARY: ${{ github.event.inputs.enable_ai_summary || 'true' }}
           HF_DAYS_BACK: "7"
-          HF_MAX_PAPERS: "6"
-          HF_MAX_BLOGS: "3"
-          HF_CATEGORIES: "vlm_data_strategy,data_engineering,training_data_strategy,data_methodology,vision_language,alignment"
+          HF_MAX_PAPERS: ${{ github.event.inputs.max_papers || '6' }}
+          HF_MAX_BLOGS: ${{ github.event.inputs.max_blogs || '3' }}
+          HF_CATEGORIES: ${{ github.event.inputs.categories || 'vlm_data_strategy,data_engineering,training_data_strategy,data_methodology,vision_language,alignment' }}
+          HF_INCLUDE_CLASSIC: "true"
+        run: python3 hf_papers_advanced.py
+
+      - name: Retry on failure
+        if: failure()
+        env:
+          FEISHU_WEBHOOK_URLS: ${{ secrets.FEISHU_WEBHOOK_URLS }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_BASE_URL: https://api.gpt.ge
+          OPENAI_MODEL: gpt-4o
+          AI_PROVIDER: openai
+          HF_ENABLE_AI_SUMMARY: "false"
+          HF_DAYS_BACK: "7"
+          HF_MAX_PAPERS: ${{ github.event.inputs.max_papers || '6' }}
+          HF_MAX_BLOGS: "0"
+          HF_CATEGORIES: ${{ github.event.inputs.categories || 'vlm_data_strategy,data_engineering,training_data_strategy,data_methodology,vision_language,alignment' }}
           HF_INCLUDE_CLASSIC: "true"
         run: |
+          echo "First attempt failed, retrying with AI summary disabled..."
+          sleep 10
           python3 hf_papers_advanced.py
-
-      - name: Upload logs if failed
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: logs
-          path: |
-            *.log
